@@ -15,7 +15,7 @@ const DoctorDashboard = () => {
             setLoading(true);
             const doctor_id = localStorage.getItem('doctor_id');
             const response = await axios.get(
-                `http://localhost:8000/doctor/appointments/doctor/${doctor_id}`
+                `http://localhost:8000/doctor/appointment/doctor/${doctor_id}/`
             );
             setAppointments(response.data);
         } catch (error) {
@@ -42,7 +42,6 @@ const DoctorDashboard = () => {
     };
 
     return (
-        <SidebarLayout>
             <div className="container mt-4">
                 <div className="row mb-4">
                     <div className="col-md-6">
@@ -121,7 +120,6 @@ const DoctorDashboard = () => {
                     </div>
                 )}
             </div>
-        </SidebarLayout>
     );
 };
 

@@ -134,6 +134,61 @@ const Doctor = () => {
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
     };
 
+    const DoctorCard = ({ doctor, onBookAppointment }) => (
+        <div className="col-md-6 mb-4">
+            <div className="card shadow-sm">
+                <div className="card-body">
+                    <div className="d-flex align-items-center mb-3">
+                        {doctor.profile_picture ? (
+                            <img
+                                src={doctor.profile_picture}
+                                alt={doctor.name}
+                                className="rounded-circle me-3"
+                                style={{ width: '60px', height: '60px', objectFit: 'cover' }}
+                            />
+                        ) : (
+                            <div className="me-3">
+                                <div className="bg-primary text-white rounded-circle p-3">
+                                    <FaUserMd size={24} />
+                                </div>
+                            </div>
+                        )}
+                        <div>
+                            <h5 className="card-title mb-1">{doctor.name}</h5>
+                            <p className="card-text text-muted mb-1">
+                                {doctor.specialization}
+                            </p>
+                            <small className="text-muted">
+                                {doctor.gender}
+                            </small>
+                        </div>
+                    </div>
+                    <div className="border-top pt-3">
+                        <div className="row mb-3">
+                            <div className="col-12 mb-2">
+                                <small className="text-muted">Experience</small>
+                                <p className="mb-0">{doctor.experience} years</p>
+                            </div>
+                            <div className="col-12">
+                                <small className="text-muted">
+                                    <FaMapMarkerAlt className="me-1" />
+                                    Address
+                                </small>
+                                <p className="mb-0">{doctor.address}</p>
+                            </div>
+                        </div>
+                        <button
+                            className="btn btn-primary w-100"
+                            onClick={() => onBookAppointment(doctor)}
+                        >
+                            Book Appointment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <SidebarLayout>
             <div className="container mt-5">
@@ -181,49 +236,7 @@ const Doctor = () => {
                 {!showAppointments && (
                     <div className="row">
                         {filteredDoctors.map(doctor => (
-                            <div key={doctor.doctor_id} className="col-md-6 mb-4">
-                                <div className="card shadow-sm">
-                                    <div className="card-body">
-                                        <div className="d-flex align-items-center mb-3">
-                                            <div className="me-3">
-                                                <div className="bg-primary text-white rounded-circle p-3">
-                                                    <FaUserMd size={24} />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h5 className="card-title mb-1">{doctor.name}</h5>
-                                                <p className="card-text text-muted mb-1">
-                                                    {doctor.specialization}
-                                                </p>
-                                                <small className="text-muted">
-                                                    {doctor.gender}
-                                                </small>
-                                            </div>
-                                        </div>
-                                        <div className="border-top pt-3">
-                                            <div className="row mb-3">
-                                                <div className="col-12 mb-2">
-                                                    <small className="text-muted">Experience</small>
-                                                    <p className="mb-0">{doctor.experience} years</p>
-                                                </div>
-                                                <div className="col-12">
-                                                    <small className="text-muted">
-                                                        <FaMapMarkerAlt className="me-1" />
-                                                        Address
-                                                    </small>
-                                                    <p className="mb-0">{doctor.address}</p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                className="btn btn-primary w-100"
-                                                onClick={() => handleBookAppointment(doctor)}
-                                            >
-                                                Book Appointment
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <DoctorCard key={doctor.doctor_id} doctor={doctor} onBookAppointment={handleBookAppointment} />
                         ))}
                     </div>
                 )}

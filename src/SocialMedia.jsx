@@ -3,12 +3,14 @@ import SidebarLayout from './components/SidebarLayout';
 import TopBar from './components/Topbar'
 import { FaHeart, FaRegHeart, FaComment, FaShare } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import axios from 'axios';
 
 const SocialMediaPage = () => {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [newPost, setNewPost] = useState('');
+    const [selectedImage, setSelectedImage] = useState(null);
 
     useEffect(() => {
         fetchPosts();
@@ -17,32 +19,8 @@ const SocialMediaPage = () => {
     const fetchPosts = async () => {
         try {
             setLoading(true);
-            // Future API call
-            // const response = await fetch('/api/posts');
-            // const data = await response.json();
-            
-            // Temporary mock data
-            const data = [
-                {
-                    id: 1,
-                    user: 'John Doe',
-                    content: 'Just finished my morning workout! 💪',
-                    likes: 15,
-                    comments: 3,
-                    isLiked: false,
-                    timestamp: '2 hours ago'
-                },
-                {
-                    id: 2,
-                    user: 'Jane Smith',
-                    content: 'Great session with my fitness trainer today! 🏋️‍♀️',
-                    likes: 24,
-                    comments: 5,
-                    isLiked: false,
-                    timestamp: '4 hours ago'
-                }
-            ];
-            setPosts(data);
+            const response = await axios.get('http://localhost:8000/user/feed/all/');
+            setPosts(response.data);
         } catch (err) {
             setError('Failed to fetch posts');
             console.error(err);
@@ -56,29 +34,17 @@ const SocialMediaPage = () => {
         if (!newPost.trim()) return;
         
         try {
-            // Future API call
-            // const response = await fetch('/api/posts', {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'Authorization': `Bearer ${localStorage.getItem('token')}`
-            //     },
-            //     body: JSON.stringify({ content: newPost })
-            // });
-            // const data = await response.json();
-            
-            const post = {
-                id: Date.now(),
-                user: 'Current User',
-                content: newPost,
-                likes: 0,
-                comments: 0,
-                isLiked: false,
-                timestamp: 'Just now'
-            };
-            
-            setPosts([post, ...posts]);
+            const formData = new FormData();
+            formData.append('user_id', localStorage.getItem('user_id'));
+            formData.append('content', newPost);
+            if (selectedImage) {
+                formData.append('image', selectedImage);
+            }
+
+            await axios.post('http://localhost:8000/user/feed/post/', formData);
+            fetchPosts(); // Refresh posts after creation
             setNewPost('');
+            setSelectedImage(null);
         } catch (err) {
             setError('Failed to create post');
             console.error(err);
@@ -130,43 +96,72 @@ const SocialMediaPage = () => {
                                 value={newPost}
                                 onChange={(e) => setNewPost(e.target.value)}
                             />
+                            <input 
+                                type="file" 
+                                className="form-control mb-3" 
+                                onChange={(e) => setSelectedImage(e.target.files[0])}
+                            />
                             <button type="submit" className="btn btn-primary">Post</button>
                         </form>
                     </div>
                 </div>
 
-                {/* Posts Feed */}
+                {/* Updated Posts Feed */}
                 {posts.map(post => (
-                    <div key={post.id} className="card mb-3">
+                    <div key={post.post_id} className="card mb-3">
                         <div className="card-body">
                             <div className="d-flex align-items-center mb-2">
                                 <img 
-                                    src={`https://ui-avatars.com/api/?name=${post.user}&background=random`}
-                                    alt={post.user}
+                                    src={post.user_image || `https://ui-avatars.com/api/?name=${post.user_name}`}
+                                    alt={post.user_name}
                                     className="rounded-circle me-2"
                                     width="40"
+                                    height="40"
+                                    style={{ objectFit: 'cover' }}
                                 />
                                 <div>
-                                    <h6 className="mb-0">{post.user}</h6>
-                                    <small className="text-muted">{post.timestamp}</small>
+                                    <h6 className="mb-0">{post.user_name}</h6>
+                                    <small className="text-muted">
+                                        {new Date(post.created_at).toLocaleString()}
+                                    </small>
                                 </div>
                             </div>
                             <p className="card-text">{post.content}</p>
-                            <div className="d-flex justify-content-between align-items-center">
-                                <div className="btn-group">
-                                    <button className="btn btn-light" onClick={() => handleLike(post.id)}>
-                                        {post.isLiked ? <FaHeart className="text-danger me-1" /> : <FaRegHeart className="text-danger me-1" />}
-                                        {post.likes}
-                                    </button>
-                                    <button className="btn btn-light">
-                                        <FaComment className="text-primary me-1" />
-                                        {post.comments}
-                                    </button>
-                                    <button className="btn btn-light">
-                                        <FaShare className="text-success" />
-                                    </button>
+                            {post.image && (
+                                <img 
+                                    src={post.image}
+                                    alt="Post content"
+                                    className="img-fluid rounded mb-3"
+                                />
+                            )}
+
+                            {/* Comments Section */}
+                            {post.comments.length > 0 && (
+                                <div className="mt-3">
+                                    <h6>Comments</h6>
+                                    {post.comments.map(comment => (
+                                        <div key={comment.comment_id} className="d-flex mb-2">
+                                            <img 
+                                                src={comment.user_image || `https://ui-avatars.com/api/?name=${comment.user_name}`}
+                                                alt={comment.user_name}
+                                                className="rounded-circle me-2"
+                                                width="30"
+                                                height="30"
+                                                style={{ objectFit: 'cover' }}
+                                            />
+                                            <div>
+                                                <div className="bg-light p-2 rounded">
+                                                    <strong>{comment.user_name}</strong>
+                                                    <p className="mb-0">{comment.content}</p>
+                                                </div>
+                                                <small className="text-muted">
+                                                    {new Date(comment.created_at).toLocaleString()}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 ))}
