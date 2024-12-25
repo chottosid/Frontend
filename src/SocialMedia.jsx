@@ -6,11 +6,13 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import axios from 'axios';
 
 const SocialMediaPage = () => {
+    const [likedPosts, setLikedPosts] = useState(new Set());
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [newPost, setNewPost] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
+    const [newComments, setNewComments] = useState({});
 
     useEffect(() => {
         fetchPosts();
@@ -19,7 +21,8 @@ const SocialMediaPage = () => {
     const fetchPosts = async () => {
         try {
             setLoading(true);
-            const response = await axios.get('http://localhost:8000/user/feed/all/');
+            const userId = localStorage.getItem('user_id');
+            const response = await axios.get(`http://localhost:8000/user/feed/all/${userId}/`);
             setPosts(response.data);
         } catch (err) {
             setError('Failed to fetch posts');
@@ -53,25 +56,49 @@ const SocialMediaPage = () => {
 
     const handleLike = async (postId) => {
         try {
-            // Future API call
-            // await fetch(`/api/posts/${postId}/like`, {
-            //     method: 'POST',
-            //     headers: {
-            //         'Authorization': `Bearer ${localStorage.getItem('token')}`
-            //     }
-            // });
+            await axios.post('http://localhost:8000/user/feed/like/', {
+                user_id: localStorage.getItem('user_id'),
+                post_id: postId
+            });
             
-            setPosts(posts.map(post => 
-                post.id === postId 
-                    ? { 
-                        ...post, 
-                        likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-                        isLiked: !post.isLiked 
-                    } 
-                    : post
-            ));
+            // Update posts with new like status
+            setPosts(prevPosts => 
+                prevPosts.map(post => 
+                    post.post_id === postId 
+                        ? { 
+                            ...post, 
+                            likes: post.liked ? post.likes - 1 : post.likes + 1,
+                            liked: !post.liked 
+                          }
+                        : post
+                )
+            );
         } catch (err) {
             setError('Failed to like post');
+            console.error(err);
+        }
+    };
+
+    const handleComment = async (postId) => {
+        if (!newComments[postId]?.trim()) return;
+        
+        try {
+            await axios.post('http://localhost:8000/user/feed/comment/', {
+                "user_id": localStorage.getItem('user_id'),
+                "post_id": postId,
+                "content": newComments[postId]
+            });
+
+            // Refresh posts to get new comment
+            fetchPosts();
+            
+            // Clear comment input
+            setNewComments(prev => ({
+                ...prev,
+                [postId]: ''
+            }));
+        } catch (err) {
+            setError('Failed to post comment');
             console.error(err);
         }
     };
@@ -135,6 +162,20 @@ const SocialMediaPage = () => {
                                 />
                             )}
 
+                            <div className="d-flex align-items-center mt-3">
+                                <button 
+                                    className="btn btn-link text-decoration-none"
+                                    onClick={() => handleLike(post.post_id)}
+                                >
+                                    {post.liked ? (
+                                        <FaHeart className="text-danger me-1" />
+                                    ) : (
+                                        <FaRegHeart className="text-danger me-1" />
+                                    )}
+                                    {post.likes || 0} Likes
+                                </button>
+                            </div>
+
                             {/* Comments Section */}
                             {post.comments.length > 0 && (
                                 <div className="mt-3">
@@ -162,6 +203,33 @@ const SocialMediaPage = () => {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                        <div className="card-footer bg-white">
+                            <form 
+                                className="d-flex gap-2"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleComment(post.post_id);
+                                }}
+                            >
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Write a comment..."
+                                    value={newComments[post.post_id] || ''}
+                                    onChange={(e) => setNewComments(prev => ({
+                                        ...prev,
+                                        [post.post_id]: e.target.value
+                                    }))}
+                                />
+                                <button 
+                                    type="submit" 
+                                    className="btn btn-primary"
+                                    disabled={!newComments[post.post_id]?.trim()}
+                                >
+                                    Comment
+                                </button>
+                            </form>
                         </div>
                     </div>
                 ))}
